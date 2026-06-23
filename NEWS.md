@@ -1,10 +1,6 @@
-# probcal 0.1.1
-
-- Renamed package to probcal.
-
 # probcal 0.1.0
 
-- CRAN submission version, when the package was still named calibratr.
+- CRAN submission version.
 
 # probcal 0.0.0.9000
 

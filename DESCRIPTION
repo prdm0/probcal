@@ -1,6 +1,6 @@
 Package: probcal
 Title: Calibration of Binary and Multiclass Probabilities
-Version: 0.1.1
+Version: 0.1.0
 Authors@R: 
     person("Pedro Rafael", "Diniz Marinho", 
            email = "pedro.rafael.marinho@gmail.com", 
