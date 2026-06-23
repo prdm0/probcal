@@ -1,9 +1,3 @@
-## R CMD check results
-
-0 errors | 0 warnings | 1 note
-
-* This is a new submission.
-
 ## Note on the package name
 
 An earlier submission used the name 'calibratr', which the incoming checks
