@@ -1,0 +1,64 @@
+url: https://prdm0.github.io/probcal/
+template:
+  bootstrap: 5
+  math-rendering: mathjax
+
+navbar:
+  structure:
+    left:  [reference, articles, news]
+    right: [search, github]
+  components:
+    articles:
+      text: Articles
+      menu:
+        - text: Calibrating Binary Probabilities
+          href: articles/probcal.html
+        - text: Applied Calibration Workflow
+          href: articles/applied-workflow.html
+        - text: Choosing a Calibrator
+          href: articles/choosing-a-calibrator.html
+        - text: Multiclass Calibration
+          href: articles/multiclass.html
+        - text: Numerical Validation
+          href: articles/numerical-validation.html
+
+articles:
+  - title: Learn probcal
+    contents:
+      - probcal
+      - applied-workflow
+      - choosing-a-calibrator
+      - multiclass
+      - numerical-validation
+
+reference:
+  - title: Scaling calibrators
+    contents:
+      - cal_platt
+      - cal_temperature
+      - cal_beta
+  - title: Binning calibrators
+    contents:
+      - cal_isotonic
+      - cal_histogram
+  - title: Multiclass calibrators
+    contents:
+      - cal_vector_scaling
+      - cal_dirichlet
+      - cal_ovr
+  - title: Metrics
+    contents:
+      - ece
+      - mce
+      - ace
+      - mmce
+  - title: Diagnostics
+    contents:
+      - reliability_diagram
+  - title: Cross-validation
+    contents:
+      - cal_cv
+  - title: Transformations
+    contents:
+      - logit
+      - inv_logit

@@ -1,0 +1,128 @@
+---
+title: "Applied Calibration Workflow"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Applied Calibration Workflow}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(probcal)
+library(dplyr)
+```
+
+## Goal
+
+This vignette shows a complete calibration workflow with a dataset included in
+R. The example uses `iris` as a binary classification problem: `versicolor`
+versus `virginica`.
+
+The important point is the data split. The classifier is fitted on a training
+set. The calibrator is fitted on a calibration set. The final assessment uses a
+test set that was not used in either fitting step.
+
+## Prepare the data
+
+```{r data}
+set.seed(1001)
+iris_binary <- iris |>
+  filter(Species != "setosa") |>
+  mutate(y = as.integer(Species == "virginica")) |>
+  group_by(y) |>
+  mutate(
+    split = sample(rep(
+      c("train", "calibration", "test"),
+      times = c(25, 12, 13)
+    ))
+  ) |>
+  ungroup()
+
+iris_binary |>
+  count(split, y)
+```
+
+## Fit a classifier
+
+The classifier is deliberately simple. The goal is not to optimize predictive
+performance, but to produce probabilities that can be evaluated and calibrated.
+
+```{r classifier}
+train <- iris_binary |>
+  filter(split == "train")
+
+calibration <- iris_binary |>
+  filter(split == "calibration")
+
+test <- iris_binary |>
+  filter(split == "test")
+
+classifier <- glm(
+  y ~ Sepal.Length + Sepal.Width,
+  data = train,
+  family = binomial()
+)
+
+calibration <- calibration |>
+  mutate(raw_p = predict(classifier, calibration, type = "response"))
+
+test <- test |>
+  mutate(raw_p = predict(classifier, test, type = "response"))
+```
+
+## Fit calibrators
+
+Here we fit two calibrators on the calibration set. `cal_beta()` works directly
+on probabilities. `cal_platt()` can be used on raw probabilities or scores.
+
+```{r calibrators}
+beta_fit <- cal_beta(calibration$raw_p, calibration$y)
+platt_fit <- cal_platt(calibration$raw_p, calibration$y)
+
+test <- test |>
+  mutate(
+    beta = predict(beta_fit, raw_p),
+    platt = predict(platt_fit, raw_p)
+  )
+```
+
+## Compare calibration metrics
+
+Calibration metrics are computed only on the test set.
+
+```{r metrics}
+metric_table <- bind_rows(
+  test |>
+    summarise(method = "raw", ece = ece(raw_p, y, bins = 5),
+              mce = mce(raw_p, y, bins = 5), ace = ace(raw_p, y, bins = 5)),
+  test |>
+    summarise(method = "beta", ece = ece(beta, y, bins = 5),
+              mce = mce(beta, y, bins = 5), ace = ace(beta, y, bins = 5)),
+  test |>
+    summarise(method = "platt", ece = ece(platt, y, bins = 5),
+              mce = mce(platt, y, bins = 5), ace = ace(platt, y, bins = 5))
+) |>
+  mutate(across(where(is.numeric), function(x) round(x, 3)))
+
+metric_table
+```
+
+The best method is data dependent. A calibrator should be chosen on a validation
+criterion that matches the intended use of the probabilities.
+
+## Plot the calibrated probabilities
+
+```{r diagram, fig.width = 6, fig.height = 5, fig.alt = "Reliability diagram for beta-calibrated iris probabilities, with binned points compared to the diagonal line."}
+reliability_diagram(test$beta, test$y, bins = 5)
+```
+
+The diagonal represents perfect calibration. Points above the diagonal indicate
+bins where the observed event frequency is higher than the mean predicted
+probability. Points below the diagonal indicate overconfident predictions.

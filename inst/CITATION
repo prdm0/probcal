@@ -1,0 +1,15 @@
+citHeader("To cite probcal in publications, use:")
+
+bibentry(
+  bibtype = "Manual",
+  title = "probcal: Calibration of Binary and Multiclass Probabilities",
+  author = person(
+    given = "Pedro Rafael",
+    family = "Diniz Marinho",
+    email = "pedro.rafael.marinho@gmail.com",
+    comment = c(ORCID = "0000-0003-1591-8300")
+  ),
+  year = "2026",
+  note = "R package version 0.1.1",
+  url = "https://prdm0.github.io/probcal/"
+)

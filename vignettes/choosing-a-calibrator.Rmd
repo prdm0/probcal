@@ -1,0 +1,117 @@
+---
+title: "Choosing a Calibrator"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Choosing a Calibrator}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(probcal)
+library(dplyr)
+```
+
+## The main decision
+
+Choose a calibrator based on the input scale, the amount of calibration data,
+and the shape of the expected miscalibration. Binary methods take vectors, and
+multiclass methods take matrices with one column per class.
+
+| Method | Input scale | Useful when | Main caution |
+|---|---|---|---|
+| `cal_platt()` | score or probability | the calibration curve is close to logistic | limited flexibility |
+| `cal_temperature()` | logits | a model is overconfident but ranking is useful | requires logits, not probabilities |
+| `cal_beta()` | probability | probabilities have asymmetric distortion | clips `0` and `1` before fitting |
+| `cal_isotonic()` | probability | many calibration observations are available | can overfit small calibration sets |
+| `cal_histogram()` | probability | interpretability by bins is preferred | depends on bin choice |
+
+## Match the input scale
+
+The most common mistake is passing probabilities to a method that expects
+logits. `cal_temperature()` expects logits because it estimates a scalar
+temperature in logit space.
+
+```{r scales}
+p <- c(0.1, 0.3, 0.7, 0.9)
+logits <- logit(p)
+round(inv_logit(logits), 3)
+```
+
+## Compare methods on held-out data
+
+The example below simulates probabilities that are too confident. The raw
+probabilities and calibrated probabilities are compared on the same test set.
+
+```{r comparison}
+set.seed(2027)
+n <- 500
+predictions <- data.frame(x = rnorm(n)) |>
+  mutate(
+    true_p = inv_logit(-0.2 + x),
+    y = rbinom(n(), 1, true_p),
+    raw_logits = 1.6 * (-0.2 + x),
+    raw_p = inv_logit(raw_logits),
+    split = sample(rep(c("calibration", "test"), length.out = n))
+  )
+
+calibration <- predictions |>
+  filter(split == "calibration")
+
+test <- predictions |>
+  filter(split == "test")
+
+fits <- list(
+  platt = cal_platt(calibration$raw_p, calibration$y),
+  beta = cal_beta(calibration$raw_p, calibration$y),
+  isotonic = cal_isotonic(calibration$raw_p, calibration$y),
+  histogram = cal_histogram(calibration$raw_p, calibration$y, bins = 10),
+  temperature = cal_temperature(calibration$raw_logits, calibration$y)
+)
+
+test <- test |>
+  mutate(
+    platt = predict(fits$platt, raw_p),
+    beta = predict(fits$beta, raw_p),
+    isotonic = predict(fits$isotonic, raw_p),
+    histogram = predict(fits$histogram, raw_p),
+    temperature = predict(fits$temperature, raw_logits)
+  )
+
+bind_rows(
+  test |> summarise(method = "raw", ece = ece(raw_p, y, bins = 10)),
+  test |> summarise(method = "platt", ece = ece(platt, y, bins = 10)),
+  test |> summarise(method = "beta", ece = ece(beta, y, bins = 10)),
+  test |> summarise(method = "isotonic", ece = ece(isotonic, y, bins = 10)),
+  test |> summarise(method = "histogram", ece = ece(histogram, y, bins = 10)),
+  test |> summarise(method = "temperature", ece = ece(temperature, y, bins = 10))
+) |>
+  mutate(ece = round(ece, 3)) |>
+  arrange(ece)
+```
+
+## Practical guidance
+
+Start with `cal_beta()` or `cal_platt()` for small to moderate calibration sets.
+Use `cal_temperature()` when logits are available and the problem is mainly
+overconfidence. Use `cal_isotonic()` when the calibration set is large enough to
+support a flexible monotone curve. Use `cal_histogram()` when a bin-level rule is
+easier to audit or explain.
+
+Cross-validated calibration is useful when a separate calibration set would be
+too small.
+
+```{r cv}
+cv_fit <- cal_cv(predictions$raw_p, predictions$y, method = "beta", folds = 5, seed = 1)
+
+predictions |>
+  mutate(oof = cv_fit$oof_predictions) |>
+  summarise(oof_ece = ece(oof, y, bins = 10))
+```

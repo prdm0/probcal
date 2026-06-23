@@ -1,0 +1,13 @@
+pandoc: '3.10'
+pkgdown: 2.2.0
+pkgdown_sha: ~
+articles:
+  applied-workflow: applied-workflow.html
+  choosing-a-calibrator: choosing-a-calibrator.html
+  multiclass: multiclass.html
+  numerical-validation: numerical-validation.html
+  probcal: probcal.html
+last_built: 2026-06-23T20:33Z
+urls:
+  reference: https://prdm0.github.io/probcal/reference
+  article: https://prdm0.github.io/probcal/articles

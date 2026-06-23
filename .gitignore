@@ -1,0 +1,23 @@
+# R project / RStudio
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+# macOS system files
+.DS_Store
+
+# Build artifacts
+*.tar.gz
+*.Rcheck/
+inst/doc/
+/doc/
+/Meta/
+
+# AGENTS.md should NEVER be tracked (project internal file)
+AGENTS.md
+CLAUDE.md
+
+# Project directories not for public repository
+paper/
+.opencode/

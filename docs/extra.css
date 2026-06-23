@@ -1,0 +1,15 @@
+.page-header img.logo {
+  width: 170px;
+  height: auto;
+}
+
+.template-home .page-header img.logo {
+  width: 190px;
+}
+
+@media (max-width: 575.98px) {
+  .page-header img.logo,
+  .template-home .page-header img.logo {
+    width: 140px;
+  }
+}
